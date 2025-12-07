@@ -364,9 +364,7 @@ This project contributes to **AI for Social Good** in the following ways:
 
 ---
 
-## 9. Team & Contributions (Example Template)
-
-> Please update this section with your actual team details.
+## 9. Team & Contributions 
 
 * **DingTianqi 1010730**
 
@@ -406,12 +404,4 @@ This project contributes to **AI for Social Good** in the following ways:
      * train all candidate models,
      * select the best model by MAE on the 20% test set,
      * and save the final pipeline to `model.joblib`.
-* The separate project report (PDF) summarises:
-
-  * Problem formulation and AI for Social Good context
-  * Data understanding and feature engineering
-  * Model design, comparison, and evaluation
-  * Interpretation (PDP, feature importance)
-  * Booking recommendation and limitations
-  * Future work
 
