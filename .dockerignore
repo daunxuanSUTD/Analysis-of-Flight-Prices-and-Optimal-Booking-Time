@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+notebook/
+data/
+Clean_Dataset.csv
+model.joblib
+*.ipynb
