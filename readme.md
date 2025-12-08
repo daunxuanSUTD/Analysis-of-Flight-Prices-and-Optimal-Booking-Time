@@ -1,14 +1,4 @@
-好，我给你一份**整合后的最终版 README**：
 
-* 已经把你原来的内容 + 我刚写的版本融合在一起
-* 加上了 **clone 仓库**、**Windows / macOS / Linux 三套环境配置**
-* 结构、用词都偏“课程项目 + 老师验收友好”
-
-你可以直接把下面整段保存为 `README.md`。
-
----
-
-````markdown
 # Flight Price Analysis and Optimal Booking Time
 
 This project studies how airline ticket prices evolve as the departure date approaches, and builds a machine-learning model to **predict flight prices** and estimate an **optimal booking window**.
