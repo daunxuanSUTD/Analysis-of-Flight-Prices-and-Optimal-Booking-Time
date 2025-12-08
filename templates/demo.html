@@ -5,378 +5,451 @@
   <title>Flight Price – Optimal Booking Time Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Chart.js for line chart -->
+  <!-- Chart.js for the line chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 980px;
       margin: 0 auto;
       padding: 20px;
-      background-color: #f7f9fc;
+      background-color: #f5f7fb;
     }
     h1 {
       text-align: center;
-      margin-bottom: 10px;
-      color: #1f3c88;
+      margin-bottom: 4px;
+      color: #1f2937;
+      font-size: 22px;
     }
-    h2 {
-      margin-top: 30px;
-      color: #1f3c88;
-    }
-    .form-section, .result-section {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #4b5563;
       margin-bottom: 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 18px 20px;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: #111827;
+    }
+    .card small {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px 16px;
+      margin-top: 14px;
     }
     label {
       display: block;
-      margin-top: 10px;
-      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #374151;
     }
-    input[type="text"],
     input[type="number"],
     select {
       width: 100%;
       padding: 6px 8px;
-      margin-top: 4px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
       box-sizing: border-box;
     }
-    .inline-group {
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+    }
+    .actions {
+      margin-top: 12px;
       display: flex;
       gap: 10px;
-    }
-    .inline-group > div {
-      flex: 1;
+      flex-wrap: wrap;
     }
     button {
-      margin-top: 16px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      background-color: #1f3c88;
-      color: #fff;
+      padding: 8px 14px;
       font-size: 14px;
+      border-radius: 6px;
+      border: none;
       cursor: pointer;
+      background-color: #2563eb;
+      color: #ffffff;
+      transition: background-color 0.15s ease;
+    }
+    button:hover {
+      background-color: #1d4ed8;
     }
     button:disabled {
-      background-color: #9aa5c4;
+      background-color: #93c5fd;
       cursor: not-allowed;
     }
-    .summary {
-      font-size: 15px;
-      line-height: 1.6;
+    .btn-secondary {
+      background-color: #e5e7eb;
+      color: #111827;
     }
-    .summary strong {
-      color: #d9534f;
+    .btn-secondary:hover {
+      background-color: #d1d5db;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #e0e0e0;
-      padding: 6px;
-      text-align: center;
-    }
-    th {
-      background: #f1f4ff;
-    }
-    .best-row {
-      background-color: #fff8e1;
-    }
-    .note {
-      font-size: 12px;
-      color: #666;
+    .error {
       margin-top: 8px;
+      font-size: 13px;
+      color: #b91c1c;
+    }
+    .result-summary {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #374151;
+    }
+    .result-summary strong {
+      color: #b91c1c;
+    }
+    .chart-wrapper {
+      margin-top: 14px;
+    }
+    .legend {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      margin-right: 4px;
     }
   </style>
 </head>
 <body>
-  <h1>Optimal Booking Time Demo</h1>
-  <p style="text-align:center; font-size: 13px; color: #555;">
-    This demo uses the trained regression model to predict ticket prices for the same flight
-    under different <code>days_left</code>, plots the price curve, and highlights the day
-    with the lowest expected price.
-  </p>
-
-  <!-- ===== Form section ===== -->
-  <div class="form-section">
-    <h2>1. Input flight profile</h2>
-
-    <div class="inline-group">
-      <div>
-        <label for="airline">Airline</label>
-        <input id="airline" type="text" placeholder="e.g. IndiGo, Air India..." />
-      </div>
-      <div>
-        <label for="travel_class">Travel class</label>
-        <select id="travel_class">
-          <option value="Economy">Economy</option>
-          <option value="Business">Business</option>
-          <option value="First">First</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="inline-group">
-      <div>
-        <label for="source_city">Source city</label>
-        <input id="source_city" type="text" placeholder="e.g. Delhi" />
-      </div>
-      <div>
-        <label for="destination_city">Destination city</label>
-        <input id="destination_city" type="text" placeholder="e.g. Mumbai" />
-      </div>
-    </div>
-
-    <div class="inline-group">
-      <div>
-        <label for="departure_time">Departure time slot</label>
-        <select id="departure_time">
-          <option value="Early Morning">Early Morning</option>
-          <option value="Morning">Morning</option>
-          <option value="Afternoon">Afternoon</option>
-          <option value="Evening" selected>Evening</option>
-          <option value="Night">Night</option>
-          <option value="Late Night">Late Night</option>
-        </select>
-      </div>
-      <div>
-        <label for="arrival_time">Arrival time slot</label>
-        <select id="arrival_time">
-          <option value="Early Morning">Early Morning</option>
-          <option value="Morning">Morning</option>
-          <option value="Afternoon">Afternoon</option>
-          <option value="Evening">Evening</option>
-          <option value="Night" selected>Night</option>
-          <option value="Late Night">Late Night</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="inline-group">
-      <div>
-        <label for="stops">Stops</label>
-        <select id="stops">
-          <option value="zero">zero (non-stop)</option>
-          <option value="one">one (1 stop)</option>
-          <option value="two_or_more">two_or_more (2+ stops)</option>
-        </select>
-      </div>
-      <div>
-        <label for="duration">Duration (hours)</label>
-        <input id="duration" type="number" step="0.1" value="2.0" />
-      </div>
-    </div>
-
-    <div class="inline-group">
-      <div>
-        <label for="max_days_left">Max days left</label>
-        <input id="max_days_left" type="number" value="60" min="5" max="120" />
-        <div class="note">
-          For example, 60 means we will predict prices from 1 to 60 days before departure.
-        </div>
-      </div>
-    </div>
-
-    <button id="submitBtn">Generate booking plan</button>
-    <div id="errorMsg" style="color:#d9534f; margin-top:8px; font-size:13px;"></div>
+  <h1>Optimal Flight Booking Time</h1>
+  <div class="subtitle">
+    The model predicts a full price curve over different <code>days_left</code>
+    and highlights the cheapest expected booking day.
   </div>
 
-  <!-- ===== Result section ===== -->
-  <div class="result-section">
-    <h2>2. Model output: recommended booking time & price curve</h2>
-    <div id="summary" class="summary">
-      No result yet. Please fill in the form above and click "Generate booking plan".
+  <!-- ================= 1. Input form ================= -->
+  <div class="card">
+    <h2>1. Flight configuration</h2>
+    <small>Choose a fixed route and flight settings. The model will only vary <strong>days_left</strong>.</small>
+
+    <form id="bookingForm">
+      <div class="form-grid">
+        <!-- Airline dropdown -->
+        <div>
+          <label for="airline">Airline *</label>
+          <select id="airline" required>
+            <option value="" disabled selected>Select airline</option>
+            <option value="Air Asia">Air Asia</option>
+            <option value="Air India">Air India</option>
+            <option value="GoAir">GoAir</option>
+            <option value="IndiGo">IndiGo</option>
+            <option value="SpiceJet">SpiceJet</option>
+            <option value="Vistara">Vistara</option>
+          </select>
+        </div>
+
+        <!-- Source city dropdown -->
+        <div>
+          <label for="source_city">Source city *</label>
+          <select id="source_city" required>
+            <option value="" disabled selected>Select source city</option>
+            <!-- Value should match the dataset exactly; Kaggle often uses 'Banglore' -->
+            <option value="Banglore">Bangalore (Banglore)</option>
+            <option value="Chennai">Chennai</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Hyderabad">Hyderabad</option>
+            <option value="Kolkata">Kolkata</option>
+            <option value="Mumbai">Mumbai</option>
+          </select>
+        </div>
+
+        <!-- Destination city dropdown -->
+        <div>
+          <label for="destination_city">Destination city *</label>
+          <select id="destination_city" required>
+            <option value="" disabled selected>Select destination</option>
+            <option value="Banglore">Bangalore (Banglore)</option>
+            <option value="Chennai">Chennai</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Hyderabad">Hyderabad</option>
+            <option value="Kolkata">Kolkata</option>
+            <option value="Mumbai">Mumbai</option>
+          </select>
+        </div>
+
+        <!-- Departure time -->
+        <div>
+          <label for="departure_time">Departure time *</label>
+          <select id="departure_time" required>
+            <option value="" disabled selected>Select departure time</option>
+            <option value="Early_Morning">Early_Morning</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Evening">Evening</option>
+            <option value="Night">Night</option>
+            <option value="Late_Night">Late_Night</option>
+          </select>
+        </div>
+
+        <!-- Arrival time -->
+        <div>
+          <label for="arrival_time">Arrival time *</label>
+          <select id="arrival_time" required>
+            <option value="" disabled selected>Select arrival time</option>
+            <option value="Early_Morning">Early_Morning</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Evening">Evening</option>
+            <option value="Night">Night</option>
+            <option value="Late_Night">Late_Night</option>
+          </select>
+        </div>
+
+        <!-- Stops -->
+        <div>
+          <label for="stops">Number of stops *</label>
+          <select id="stops" required>
+            <option value="" disabled selected>Select stops</option>
+            <option value="zero">0 (direct)</option>
+            <option value="one">1 stop</option>
+            <option value="two_or_more">2+ stops</option>
+          </select>
+        </div>
+
+        <!-- Class -->
+        <div>
+          <label for="travel_class">Travel class *</label>
+          <select id="travel_class" required>
+            <option value="" disabled selected>Select class</option>
+            <option value="Economy">Economy</option>
+            <option value="Business">Business</option>
+            <option value="First">First</option>
+          </select>
+        </div>
+
+        <!-- Duration -->
+        <div>
+          <label for="duration">Duration (hours) *</label>
+          <input
+            id="duration"
+            type="number"
+            min="0.5"
+            max="20"
+            step="0.1"
+            required
+            placeholder="e.g. 2.0"
+          />
+        </div>
+
+        <!-- Max days to show on chart -->
+        <div>
+          <label for="max_days_left">Max days_left displayed (chart only)</label>
+          <input
+            id="max_days_left"
+            type="number"
+            min="5"
+            max="60"
+            value="60"
+          />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submitBtn">Generate booking plan</button>
+        <button type="button" class="btn-secondary" id="resetBtn">Reset</button>
+      </div>
+
+      <div id="errorMsg" class="error" style="display:none;"></div>
+    </form>
+  </div>
+
+  <!-- ================= 2. Results & chart ================= -->
+  <div class="card">
+    <h2>2. Model output: price curve & recommended booking day</h2>
+    <small>
+      The backend endpoint <code>/booking_plan</code> computes predicted prices for
+      days_left = 1..60 and returns the cheapest day.
+    </small>
+
+    <div id="summary" class="result-summary" style="margin-top:10px;">
+      No result yet. Please fill in the form above and click
+      <strong>Generate booking plan</strong>.
     </div>
 
-    <canvas id="priceChart" style="margin-top: 16px; max-height: 360px;"></canvas>
+    <div class="chart-wrapper">
+      <canvas id="priceChart" style="max-height: 340px;"></canvas>
+    </div>
 
-    <div id="curveTableContainer"></div>
+    <div class="legend">
+      <span class="badge">● Blue line</span> Predicted price vs. days_left
+      <span class="badge">● Red dot</span> Lowest predicted price (cheapest day)
+    </div>
   </div>
 
   <script>
-    const submitBtn = document.getElementById("submitBtn");
-    const errorMsg = document.getElementById("errorMsg");
-    const summaryDiv = document.getElementById("summary");
-    const curveTableContainer = document.getElementById("curveTableContainer");
     let chartInstance = null;
 
-    async function generatePlan() {
-      errorMsg.textContent = "";
-      summaryDiv.textContent = "Calling backend model...";
-      curveTableContainer.innerHTML = "";
-      submitBtn.disabled = true;
+    function renderChart(curve, maxDaysToShow) {
+      const labelsAll = curve.map(pt => pt.days_left);
+      const pricesAll = curve.map(pt => pt.predicted_price);
 
-      // 1. Collect form values
-      const airline = document.getElementById("airline").value.trim();
-      const source_city = document.getElementById("source_city").value.trim();
-      const destination_city = document.getElementById("destination_city").value.trim();
-      const departure_time = document.getElementById("departure_time").value;
-      const arrival_time = document.getElementById("arrival_time").value;
-      const stops = document.getElementById("stops").value;
-      const travel_class = document.getElementById("travel_class").value;
-      const duration = Number(document.getElementById("duration").value);
-      const max_days_left = Number(document.getElementById("max_days_left").value);
+      // Optionally limit the displayed range on the chart
+      const limited = labelsAll.map((d, idx) => ({ d, p: pricesAll[idx] }))
+        .filter(item => item.d >= 1 && item.d <= maxDaysToShow);
 
-      if (!airline || !source_city || !destination_city || !duration || !max_days_left) {
-        errorMsg.textContent = "Please provide airline, cities, duration, and max days left.";
-        summaryDiv.textContent = "Form is incomplete.";
-        submitBtn.disabled = false;
+      const labels = limited.map(item => item.d);
+      const prices = limited.map(item => item.p);
+
+      if (labels.length === 0) {
         return;
       }
 
-      // 2. Build payload (days_left is enumerated inside the backend)
+      // Find minimum within displayed range
+      let minIndex = 0;
+      for (let i = 1; i < prices.length; i++) {
+        if (prices[i] < prices[minIndex]) {
+          minIndex = i;
+        }
+      }
+      const bestDaysLeft = labels[minIndex];
+      const bestPrice = prices[minIndex];
+
+      const pointColors = prices.map((v, i) => i === minIndex ? "#dc2626" : "#2563eb");
+      const pointRadius = prices.map((v, i) => i === minIndex ? 6 : 3);
+
+      const ctx = document.getElementById("priceChart").getContext("2d");
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Predicted price",
+              data: prices,
+              tension: 0.25,
+              borderWidth: 2,
+              pointBackgroundColor: pointColors,
+              pointRadius: pointRadius,
+              pointHoverRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: items => `Days left: ${items[0].label}`,
+                label: item => `Price: ${item.parsed.y.toFixed(2)}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Days left (before departure)" },
+            },
+            y: {
+              title: { display: true, text: "Predicted price (same unit as dataset)" },
+            },
+          },
+        },
+      });
+
+      // Update summary text
+      const summaryDiv = document.getElementById("summary");
+      summaryDiv.innerHTML =
+        `✅ The model predicts the <strong>lowest expected price</strong> in this window ` +
+        `when you book <strong>${bestDaysLeft} days</strong> before departure. ` +
+        `The corresponding predicted price is approximately <strong>${bestPrice.toFixed(2)}</strong>.`;
+    }
+
+    document.getElementById("bookingForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const errorMsg = document.getElementById("errorMsg");
+      const summaryDiv = document.getElementById("summary");
+      const submitBtn = document.getElementById("submitBtn");
+
+      errorMsg.style.display = "none";
+      errorMsg.textContent = "";
+      summaryDiv.textContent = "Calling /booking_plan, please wait...";
+
+      submitBtn.disabled = true;
+
       const payload = {
-        airline,
-        source_city,
-        destination_city,
-        departure_time,
-        arrival_time,
-        stops,
-        travel_class,
-        duration
+        airline: document.getElementById("airline").value,
+        source_city: document.getElementById("source_city").value,
+        destination_city: document.getElementById("destination_city").value,
+        departure_time: document.getElementById("departure_time").value,
+        arrival_time: document.getElementById("arrival_time").value,
+        stops: document.getElementById("stops").value,
+        travel_class: document.getElementById("travel_class").value,
+        duration: parseFloat(document.getElementById("duration").value),
       };
+
+      const maxDaysInput = document.getElementById("max_days_left").value;
+      const maxDaysToShow =
+        maxDaysInput && !isNaN(parseInt(maxDaysInput, 10))
+          ? parseInt(maxDaysInput, 10)
+          : 60;
 
       try {
         const resp = await fetch("/booking_plan", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
 
         if (!resp.ok) {
-          throw new Error("HTTP " + resp.status);
+          throw new Error(`HTTP ${resp.status}`);
         }
 
         const data = await resp.json();
-        // Expected format:
-        // { best_days_left, best_price, curve: [ {days_left, predicted_price}, ... ] }
-
-        // Optionally filter curve by user-defined max_days_left
-        let curve = data.curve;
-        if (Number.isFinite(max_days_left)) {
-          curve = curve.filter(pt => pt.days_left >= 1 && pt.days_left <= max_days_left);
+        if (!data.curve || !Array.isArray(data.curve) || data.curve.length === 0) {
+          throw new Error("Empty curve returned from backend.");
         }
 
-        if (curve.length === 0) {
-          summaryDiv.textContent = "Curve data is empty. Please check backend logic.";
-          submitBtn.disabled = false;
-          return;
-        }
-
-        // Find best point within the visible range
-        let bestPoint = curve[0];
-        for (const pt of curve) {
-          if (pt.predicted_price < bestPoint.predicted_price) {
-            bestPoint = pt;
-          }
-        }
-
-        // 3. Text summary
-        summaryDiv.innerHTML =
-          `✅ Based on the model, the <strong>lowest expected price</strong> in this window is ` +
-          `<strong>${bestPoint.predicted_price.toFixed(2)}</strong> (same price unit as in the dataset), ` +
-          `when booking <strong>${bestPoint.days_left} days</strong> before departure.`;
-
-        // 4. Line chart
-        const labels = curve.map(pt => pt.days_left);
-        const prices = curve.map(pt => pt.predicted_price);
-
-        const pointBackgroundColors = prices.map((p, idx) =>
-          labels[idx] === bestPoint.days_left ? "#d9534f" : "#1f77b4"
-        );
-        const pointRadius = prices.map((p, idx) =>
-          labels[idx] === bestPoint.days_left ? 6 : 3
-        );
-
-        const ctx = document.getElementById("priceChart").getContext("2d");
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
-
-        chartInstance = new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "Predicted price vs. days_left",
-              data: prices,
-              tension: 0.2,
-              fill: false,
-              pointBackgroundColor: pointBackgroundColors,
-              pointRadius: pointRadius
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                display: true
-              },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return `Price: ${context.parsed.y.toFixed(2)}`;
-                  }
-                }
-              }
-            },
-            scales: {
-              x: {
-                title: {
-                  display: true,
-                  text: "Days left"
-                }
-              },
-              y: {
-                title: {
-                  display: true,
-                  text: "Predicted price"
-                }
-              }
-            }
-          }
-        });
-
-        // 5. Simple table with first 30 points
-        let html = "<table><thead><tr><th>Days left</th><th>Predicted price</th></tr></thead><tbody>";
-        const maxRows = Math.min(curve.length, 30);
-        for (let i = 0; i < maxRows; i++) {
-          const pt = curve[i];
-          const isBest = pt.days_left === bestPoint.days_left;
-          html += `<tr class="${isBest ? "best-row" : ""}">
-                     <td>${pt.days_left}</td>
-                     <td>${pt.predicted_price.toFixed(2)}</td>
-                   </tr>`;
-        }
-        html += "</tbody></table>";
-        if (curve.length > maxRows) {
-          html += `<div class="note">(Only the first ${maxRows} points are shown here. The full curve is available via the API.)</div>`;
-        }
-
-        curveTableContainer.innerHTML = html;
+        renderChart(data.curve, maxDaysToShow);
       } catch (err) {
         console.error(err);
-        errorMsg.textContent = "Error calling /booking_plan. Please check that the backend is running and the endpoint is available.";
+        errorMsg.style.display = "block";
+        errorMsg.textContent =
+          "Error calling /booking_plan. Please check that the backend is running and the endpoint is available.";
         summaryDiv.textContent = "Request failed.";
       } finally {
         submitBtn.disabled = false;
       }
-    }
+    });
 
-    submitBtn.addEventListener("click", function () {
-      generatePlan();
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      const form = document.getElementById("bookingForm");
+      form.reset();
+      document.getElementById("errorMsg").style.display = "none";
+      document.getElementById("errorMsg").textContent = "";
+      document.getElementById("summary").textContent =
+        "No result yet. Please fill in the form above and click Generate booking plan.";
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
     });
   </script>
 </body>

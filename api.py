@@ -1,89 +1,117 @@
-# api.py
-#
-# FastAPI backend for the flight price project.
-# Exposes:
-#   - GET  /health        : health check
-#   - POST /predict       : point-wise price prediction for a given days_left
-#   - POST /booking_plan  : price curve over a window of days_left and optimal booking time
-#   - GET  /demo          : HTML demo page (uses templates/demo.html)
+# api.py  - English version
 
-from pathlib import Path
 from typing import List
 
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-# -------------------------------------------------------------------
-# Paths and model loading
-# -------------------------------------------------------------------
+app = FastAPI(title="Flight Price Booking Planner")
 
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "model.joblib"
+# Jinja2 templates directory
+templates = Jinja2Templates(directory="templates")
 
-app = FastAPI(
-    title="Flight Price Prediction API",
-    description="API for predicting flight prices and optimal booking time.",
-    version="1.0.0",
-)
+# Load trained model (pipeline: preprocessing + regressor)
+MODEL_PATH = "models/model.joblib"
+model = joblib.load(MODEL_PATH)
 
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-
+# Mapping from text stops to numeric encoding
 STOPS_MAP = {
     "zero": 0,
     "one": 1,
     "two_or_more": 2,
 }
 
-# We try to load the model at startup so that errors are visible early.
-try:
-    model = joblib.load(MODEL_PATH)
-    model_loading_error: str | None = None
-except Exception as e:  # noqa: BLE001
-    model = None
-    model_loading_error = str(e)
+
+# ---------- Health & basic routes ----------
 
 
-# -------------------------------------------------------------------
-# Pydantic models
-# -------------------------------------------------------------------
-
-class FlightRequest(BaseModel):
-    """Request schema for /predict (includes days_left)."""
-
-    airline: str = Field(..., description="Airline name, e.g. 'IndiGo'")
-    source_city: str = Field(..., description="Source city, e.g. 'Delhi'")
-    destination_city: str = Field(..., description="Destination city, e.g. 'Mumbai'")
-    departure_time: str = Field(..., description="Departure time slot, e.g. 'Morning'")
-    arrival_time: str = Field(..., description="Arrival time slot, e.g. 'Night'")
-    stops: str = Field(
-        ...,
-        description="Number of stops in text form: 'zero', 'one', or 'two_or_more'",
-    )
-    travel_class: str = Field(..., description="Travel class, e.g. 'Economy'")
-    duration: float = Field(..., description="Flight duration in hours")
-    days_left: int = Field(..., description="How many days before departure the ticket is bought")
+@app.get("/health")
+def health() -> dict:
+    """Simple health check endpoint."""
+    return {"status": "ok"}
 
 
-class FlightResponse(BaseModel):
-    predicted_price: float
+@app.get("/")
+def index() -> RedirectResponse:
+    """Redirect root URL to the demo page."""
+    return RedirectResponse(url="/demo")
 
 
-class BookingRequest(BaseModel):
-    """Request schema for /booking_plan (no days_left; the API scans over a window)."""
+@app.get("/demo")
+def demo_page(request: Request):
+    """Render the front-end demo page."""
+    return templates.TemplateResponse("demo.html", {"request": request})
 
+
+# ---------- Single-point prediction (optional, kept for completeness) ----------
+
+
+class PredictRequest(BaseModel):
     airline: str
     source_city: str
     destination_city: str
     departure_time: str
     arrival_time: str
     stops: str  # "zero" | "one" | "two_or_more"
-    travel_class: str
+    travel_class: str  # "Economy" | "Business" | "First"
     duration: float
+    days_left: int
+
+
+class PredictResponse(BaseModel):
+    predicted_price: float
+
+
+@app.post("/predict", response_model=PredictResponse)
+def predict_price(req: PredictRequest) -> PredictResponse:
+    """
+    Single-point prediction:
+    Given a specific configuration INCLUDING days_left,
+    return the predicted ticket price.
+    """
+    df = pd.DataFrame(
+        [
+            {
+                "airline": req.airline,
+                "source_city": req.source_city,
+                "destination_city": req.destination_city,
+                "departure_time": req.departure_time,
+                "arrival_time": req.arrival_time,
+                "class": req.travel_class,
+                "duration": req.duration,
+                "days_left": req.days_left,
+                # both raw and encoded stops are provided
+                "stops": req.stops,
+                "stops_encoded": STOPS_MAP.get(req.stops, 0),
+                "route": f"{req.source_city}-{req.destination_city}",
+            }
+        ]
+    )
+
+    # Model predicts log_price; convert back to original price scale
+    log_pred = model.predict(df)[0]
+    price = float(np.expm1(log_pred))
+
+    return PredictResponse(predicted_price=price)
+
+
+# ---------- Optimal booking plan (used by the demo UI) ----------
+
+
+class BookingRequest(BaseModel):
+    airline: str
+    source_city: str
+    destination_city: str
+    departure_time: str
+    arrival_time: str
+    stops: str  # "zero" | "one" | "two_or_more"
+    travel_class: str  # "Economy" | "Business" | "First"
+    duration: float  # in hours
 
 
 class BookingPlanPoint(BaseModel):
@@ -97,46 +125,14 @@ class BookingPlanResponse(BaseModel):
     curve: List[BookingPlanPoint]
 
 
-# -------------------------------------------------------------------
-# Helper functions
-# -------------------------------------------------------------------
-
-def ensure_model_loaded():
-    """Raise HTTP 500 if the model failed to load."""
-    if model is None:
-        msg = "Model is not loaded. Please check that models/model.joblib exists."
-        if model_loading_error:
-            msg += f" Loading error: {model_loading_error}"
-        raise HTTPException(status_code=500, detail=msg)
-
-
-def build_single_df(req: FlightRequest) -> pd.DataFrame:
-    """Build a single-row DataFrame from a FlightRequest."""
-    stops_encoded = STOPS_MAP.get(req.stops, 0)
-    row = {
-        "airline": req.airline,
-        "source_city": req.source_city,
-        "destination_city": req.destination_city,
-        "departure_time": req.departure_time,
-        "arrival_time": req.arrival_time,
-        "class": req.travel_class,
-        "duration": req.duration,
-        "days_left": req.days_left,
-        "stops_encoded": stops_encoded,
-        "route": f"{req.source_city}-{req.destination_city}",
-    }
-    return pd.DataFrame([row])
-
-
 def build_curve_df(
-    req: BookingRequest,
-    days_min: int = 1,
-    days_max: int = 60,
+    req: BookingRequest, days_min: int = 1, days_max: int = 60
 ) -> pd.DataFrame:
-    """Given a flight profile, build a DataFrame over a window of days_left."""
+    """
+    Build a DataFrame where all flight features are fixed,
+    and only `days_left` varies from days_min to days_max.
+    """
     rows = []
-    stops_encoded = STOPS_MAP.get(req.stops, 0)
-
     for d in range(days_min, days_max + 1):
         rows.append(
             {
@@ -148,72 +144,41 @@ def build_curve_df(
                 "class": req.travel_class,
                 "duration": req.duration,
                 "days_left": d,
-                "stops_encoded": stops_encoded,
+                # provide both columns because the trained pipeline expects them
+                "stops": req.stops,
+                "stops_encoded": STOPS_MAP.get(req.stops, 0),
                 "route": f"{req.source_city}-{req.destination_city}",
             }
         )
-
     return pd.DataFrame(rows)
 
 
-# -------------------------------------------------------------------
-# Routes
-# -------------------------------------------------------------------
-
-@app.get("/health")
-def health_check():
-    """Simple health check endpoint."""
-    return {
-        "status": "ok",
-        "model_loaded": model is not None,
-        "model_path": str(MODEL_PATH),
-    }
-
-
-@app.post("/predict", response_model=FlightResponse)
-def predict_price(req: FlightRequest):
-    """
-    Point-wise prediction: given a specific days_left, predict ticket price.
-
-    This is useful if we only want to answer:
-    "If I buy the ticket N days before departure, what is the expected price?"
-    """
-    ensure_model_loaded()
-
-    df_input = build_single_df(req)
-    try:
-        log_pred = model.predict(df_input)[0]
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Model prediction failed: {e}") from e
-
-    price = float(np.expm1(log_pred))  # inverse of log1p(price)
-    return FlightResponse(predicted_price=price)
-
-
 @app.post("/booking_plan", response_model=BookingPlanResponse)
-def booking_plan(req: BookingRequest):
+def booking_plan(req: BookingRequest) -> BookingPlanResponse:
     """
-    For a fixed flight profile, scan days_left over a window [1, 60] and return:
-    - the full price curve, and
-    - the recommended booking time (days_left with minimum predicted price).
-    """
-    ensure_model_loaded()
+    Main endpoint used by the front-end demo.
 
+    For a given flight configuration (airline, route, class, etc.),
+    we:
+    - Enumerate days_left from 1 to 60
+    - Predict price for each day
+    - Build a price curve
+    - Find the day with the lowest predicted price
+    """
+    # 1) Build curve DataFrame
     df_curve = build_curve_df(req, days_min=1, days_max=60)
 
-    try:
-        log_pred = model.predict(df_curve)  # shape: (N,)
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Model prediction failed: {e}") from e
+    # 2) Predict log_price and convert to price
+    log_pred = model.predict(df_curve)  # shape: (N,)
+    prices = np.expm1(log_pred)
 
-    prices = np.expm1(log_pred)  # back to original price scale
-
-    # Find minimum
+    # 3) Find the minimum predicted price
     idx_min = int(np.argmin(prices))
     best_days_left = int(df_curve.loc[idx_min, "days_left"])
     best_price = float(prices[idx_min])
 
-    curve_points = [
+    # 4) Build response curve
+    curve: List[BookingPlanPoint] = [
         BookingPlanPoint(days_left=int(d), predicted_price=float(p))
         for d, p in zip(df_curve["days_left"].tolist(), prices.tolist())
     ]
@@ -221,28 +186,5 @@ def booking_plan(req: BookingRequest):
     return BookingPlanResponse(
         best_days_left=best_days_left,
         best_price=best_price,
-        curve=curve_points,
-    )
-
-
-@app.get("/demo")
-def demo_page(request: Request):
-    """
-    Render the HTML demo page.
-
-    The template 'demo.html' should be located in the 'templates' folder
-    and will call the /booking_plan endpoint from JavaScript.
-    """
-    return templates.TemplateResponse("demo.html", {"request": request})
-
-
-@app.get("/")
-def root():
-    """Simple root endpoint to point users to the docs and demo."""
-    return JSONResponse(
-        {
-            "message": "Flight Price Prediction API",
-            "docs": "/docs",
-            "demo": "/demo",
-        }
+        curve=curve,
     )

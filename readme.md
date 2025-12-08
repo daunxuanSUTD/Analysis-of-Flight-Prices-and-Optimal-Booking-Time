@@ -1,4 +1,3 @@
-
 # Flight Price Analysis and Optimal Booking Time
 
 This project studies how airline ticket prices evolve as the departure date approaches, and builds a machine-learning model to **predict flight prices** and estimate an **optimal booking window**.
@@ -78,10 +77,6 @@ The training script expects columns including (but not limited to):
 git clone https://github.com/daunxuanSUTD/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
 cd Analysis-of-Flight-Prices-and-Optimal-Booking-Time
 ```
-
-(Replace `<your-username>` with your actual GitHub username if needed.)
-
----
 
 ## 4. Environment Setup
 
@@ -193,17 +188,9 @@ The notebook contains:
 
 ### 5.1 Running the notebook
 
-1. Activate the virtual environment:
+1. Ensure the virtual environment is activated as described in **Section 4**.
 
-   ```bash
-   # Windows
-   .\.venv\Scripts\activate
-
-   # or macOS / Linux
-   source .venv/bin/activate
-   ```
-
-2. Start Jupyter (if running outside VS Code):
+2. Start Jupyter:
 
    ```bash
    jupyter notebook
@@ -325,14 +312,7 @@ The script `train.py` encapsulates the final training pipeline used in the noteb
 From the project root:
 
 ```bash
-# 1. Activate venv
-# Windows
-.\.venv\Scripts\activate
-
-# macOS / Linux
-# source .venv/bin/activate
-
-# 2. Run training
+# Assumes the virtual environment from Section 4 is already activated
 python train.py
 ```
 
@@ -346,7 +326,7 @@ After successful training, you should see:
   * `model_comparison_r2.png`
   * `model_comparison_mae.png`
   * `price_vs_days_left.png`
-  * (Optional) `feature_importance_top20.png`
+  * `feature_importance_top20.png`
 
 ---
 
@@ -362,7 +342,7 @@ The script `api.py` exposes the trained model as a simple REST API using FastAPI
 
   * `GET /health` – health check endpoint.
   * `GET /docs` – Swagger UI (interactive API documentation).
-  * `GET /demo` – a simple web form (from `templates/demo.html`) calling `/predict` via JavaScript.
+  * `GET /demo` – a simple web form (from `templates/demo.html`) calling `/predict` or `/booking_plan` via JavaScript.
 
 The request body for `POST /predict` includes:
 
@@ -381,12 +361,7 @@ The request body for `POST /predict` includes:
 From the project root:
 
 ```bash
-# Activate venv
-# Windows
-.\.venv\Scripts\activate
-
-# macOS / Linux
-# source .venv/bin/activate
+# Assumes the virtual environment from Section 4 is already activated
 
 # Make sure models/model.joblib exists (run train.py first if needed)
 python train.py  # optional, if not yet trained
@@ -461,29 +436,13 @@ This section summarises the **exact steps** to reproduce the project results.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/<your-username>/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
+   git clone https://github.com/daunxuanSUTD/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
    cd Analysis-of-Flight-Prices-and-Optimal-Booking-Time
    ```
 
-2. Create and activate a Python 3.10 virtual environment:
+2. Set up a Python 3.10 virtual environment and install dependencies **as described in Sections 4.1–4.3**.
 
-   ```bash
-   # Windows
-   python -m venv .venv
-   .\.venv\Scripts\activate
-
-   # macOS / Linux
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Download the Kaggle dataset and place the cleaned CSV as:
+3. Download the Kaggle dataset and place the cleaned CSV as:
 
    ```text
    data/Clean_Dataset.csv
@@ -491,7 +450,7 @@ This section summarises the **exact steps** to reproduce the project results.
 
 ### 8.2 Retrain the model
 
-From the project root:
+From the project root (with the virtual environment already activated):
 
 ```bash
 python train.py
@@ -512,7 +471,7 @@ Therefore, re-running `train.py` reconstructs the **same 80/20 split** and re-co
 
 ### 8.3 Run the API and demo
 
-From the project root:
+From the project root (with the virtual environment already activated):
 
 ```bash
 python -m uvicorn api:app --host 0.0.0.0 --port 8000 --reload
@@ -572,20 +531,5 @@ This project contributes to **AI for Social Good** in the following ways:
   * `api.py` – model serving
   * `requirements.txt` – dependency specification
 
-To fully reproduce the reported performance:
 
-1. Place the cleaned dataset in `data/Clean_Dataset.csv`.
-2. Create and activate a Python 3.10 virtual environment.
-3. Install dependencies with `pip install -r requirements.txt`.
-4. Run `python train.py` to:
 
-   * perform the 80/20 train–test split with `random_state=42`,
-   * train all candidate models,
-   * select the best model by **MAE** on the 20% test set (original price scale),
-   * and save the final pipeline to `models/model.joblib`.
-
-You may then start the FastAPI service (`api.py`) and use `/predict` or the `/demo` page to interact with the model.
-
----
-
-```
