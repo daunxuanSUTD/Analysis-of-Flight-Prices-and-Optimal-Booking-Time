@@ -13,8 +13,6 @@ by making price dynamics more transparent and providing better booking recommend
 
 ## 1. Repository Structure
 
-Final project layout:
-
 ```text
 Analysis-of-Flight-Prices-and-Optimal-Booking-Time/
 ├─ README.md
@@ -520,16 +518,7 @@ This project contributes to **AI for Social Good** in the following ways:
 
 ---
 
-## 11. Notes for Markers / TA
 
-* The **main notebook** for reviewing the analysis is:
-  `notebook/Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`.
-
-* The **end-to-end reproducible pipeline** is encapsulated in:
-
-  * `train.py` – model training and saving
-  * `api.py` – model serving
-  * `requirements.txt` – dependency specification
 
 
 
