@@ -75,7 +75,7 @@ The training script expects columns including (but not limited to):
 ### 3.1 Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
+git clone https://github.com/daunxuanSUTD/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
 cd Analysis-of-Flight-Prices-and-Optimal-Booking-Time
 ```
 
