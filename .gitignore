@@ -14,7 +14,7 @@ __pycache__/
 *.pkl
 model.joblib
 
-# Data files 
-*.csv
+# Local files 
+D.save
 
 

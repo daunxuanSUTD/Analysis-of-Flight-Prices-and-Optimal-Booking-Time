@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import joblib
+from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -18,9 +18,15 @@ from sklearn import set_config
 
 RANDOM_SEED = 42
 PROJECT_ROOT = Path(__file__).resolve().parent
-DATA_PATH = PROJECT_ROOT / "Clean_Dataset.csv"
-MODEL_PATH = PROJECT_ROOT / "model.joblib"
+DATA_DIR = PROJECT_ROOT / "data"
+MODELS_DIR = PROJECT_ROOT / "models"
+OUTPUT_DIR = PROJECT_ROOT / "output"
 
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+DATA_PATH = DATA_DIR / "Clean_Dataset.csv"
+MODEL_PATH = MODELS_DIR / "model.joblib"
 
 def load_and_preprocess_raw(path: Path) -> pd.DataFrame:
     """
@@ -231,7 +237,8 @@ def main():
 
     if best_pipeline is not None:
         joblib.dump(best_pipeline, MODEL_PATH)
-        print(f"\nSaved best model pipeline to {MODEL_PATH}")
+        print(f"Saved best model pipeline to {MODEL_PATH}")
+
 
 
 if __name__ == "__main__":

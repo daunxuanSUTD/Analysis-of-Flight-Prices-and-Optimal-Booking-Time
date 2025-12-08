@@ -1,4 +1,14 @@
+好，我给你一份**整合后的最终版 README**：
 
+* 已经把你原来的内容 + 我刚写的版本融合在一起
+* 加上了 **clone 仓库**、**Windows / macOS / Linux 三套环境配置**
+* 结构、用词都偏“课程项目 + 老师验收友好”
+
+你可以直接把下面整段保存为 `README.md`。
+
+---
+
+````markdown
 # Flight Price Analysis and Optimal Booking Time
 
 This project studies how airline ticket prices evolve as the departure date approaches, and builds a machine-learning model to **predict flight prices** and estimate an **optimal booking window**.
@@ -14,26 +24,40 @@ by making price dynamics more transparent and providing better booking recommend
 
 ## 1. Repository Structure
 
-Project root
+Final project layout:
 
 ```text
-.
+Analysis-of-Flight-Prices-and-Optimal-Booking-Time/
 ├─ README.md
 ├─ requirements.txt
-├─ Dockerfile                             # Optional, for containerization
-├─ Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb
-├─ train.py                               # Training script: builds and saves the best model
-├─ api.py                                 # FastAPI app for serving predictions
-├─ Clean_Dataset.csv                      # Local data file (not versioned; download from Kaggle)
-├─ model.joblib                           # Saved best pipeline (created by train.py, not versioned if large)
-└─ figures/                               # Optional: exported figures used in the report
-    ├─ pipeline_diagram.png
-    ├─ model_comparison.png
-    └─ pdp_days_left_vs_price.png
+├─ Dockerfile                         # Optional, for containerization
+├─ train.py                           # Training script: builds and saves the best model
+├─ api.py                             # FastAPI app for serving predictions
+│
+├─ data/
+│   └─ Clean_Dataset.csv              # Cleaned dataset (from Kaggle)
+│
+├─ models/
+│   └─ model.joblib                   # Saved best pipeline (created by train.py)
+│
+├─ output/                            # Training & evaluation artifacts
+│   ├─ model_results.csv
+│   ├─ model_comparison_r2.png
+│   ├─ model_comparison_mae.png
+│   ├─ price_vs_days_left.png
+│   └─ feature_importance_top20.png   # Only for tree-based best model
+│
+├─ notebook/
+│   └─ Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb
+│
+└─ templates/
+    └─ demo.html                      # Simple web UI for the API demo
 ````
 
-> Note: `Clean_Dataset.csv` and `model.joblib` may **not** be stored in Git due to size constraints.
-> They are local artifacts that can be recreated by downloading the dataset from Kaggle and running `train.py`.
+> Notes:
+>
+> * `data/Clean_Dataset.csv` and `models/model.joblib` may **not** be stored in Git due to size constraints.
+> * They can be recreated by downloading the dataset from Kaggle and running `train.py`.
 
 ---
 
@@ -46,16 +70,30 @@ We use the public **Flight Price Prediction** dataset from Kaggle:
 
 After basic cleaning, the project uses:
 
-* `Clean_Dataset.csv` placed in the **project root** (same folder as `train.py`).
+* `data/Clean_Dataset.csv`
 
-The training script expects:
+The training script expects columns including (but not limited to):
 
-* Columns including (but not limited to):
-  `airline`, `source_city`, `destination_city`, `departure_time`, `arrival_time`, `stops`, `class`, `duration`, `days_left`, `price`, `flight` (if present), and any technical index column (e.g. `Unnamed: 0`, which will be dropped if it exists).
+* `airline`, `source_city`, `destination_city`, `departure_time`, `arrival_time`,
+  `stops`, `class`, `duration`, `days_left`, `price`
+* Optional columns such as `flight` or technical index columns (e.g. `Unnamed: 0`) are dropped in preprocessing if present.
 
 ---
 
-## 3. Environment Setup
+## 3. Getting Started
+
+### 3.1 Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
+cd Analysis-of-Flight-Prices-and-Optimal-Booking-Time
+```
+
+(Replace `<your-username>` with your actual GitHub username if needed.)
+
+---
+
+## 4. Environment Setup
 
 The project is developed and tested with:
 
@@ -63,13 +101,13 @@ The project is developed and tested with:
 * Main libraries:
 
   * `pandas`, `numpy`
-  * `matplotlib`, `seaborn`
+  * `matplotlib`
   * `scikit-learn`
   * `xgboost`, `lightgbm`
   * `joblib`
   * `fastapi`, `pydantic`, `uvicorn`
 
-### 3.1 Create and activate a virtual environment (Windows)
+### 4.1 Create and activate a virtual environment (Windows)
 
 From the project root:
 
@@ -81,7 +119,23 @@ python -m venv .venv
 python -m pip install --upgrade pip
 ```
 
-### 3.2 Install dependencies
+### 4.2 Create and activate a virtual environment (macOS / Linux)
+
+From the project root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+
+# (Optional) upgrade pip
+python -m pip install --upgrade pip
+```
+
+> If `python3` is not available, try using `python` instead, depending on your system configuration.
+
+### 4.3 Install dependencies
+
+Once the virtual environment is activated:
 
 ```bash
 pip install -r requirements.txt
@@ -93,7 +147,6 @@ Example `requirements.txt`:
 pandas
 numpy
 matplotlib
-seaborn
 scikit-learn
 xgboost
 lightgbm
@@ -105,13 +158,13 @@ uvicorn
 
 ---
 
-## 4. Reproducing the Analysis (Jupyter Notebook)
+## 5. Exploratory Analysis (Jupyter Notebook)
 
 Main notebook:
 
-* `Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`
+* `notebook/Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`
 
-This notebook contains:
+The notebook contains:
 
 * **Data exploration & cleaning**
 
@@ -132,28 +185,32 @@ This notebook contains:
   * XGBoost Regressor
   * LightGBM Regressor
 
-* **Evaluation metrics** (on the **original price scale**):
+* **Evaluation metrics**
 
-  * `R²`
-  * `MAE`
+  * `R²` (on the **log_price** scale)
+  * `MAE` (on the **original price** scale)
 
 * **Interpretability**
 
   * Feature importance (for tree-based models)
   * Partial Dependence Plot (PDP) for `days_left`
-    (visualizing how predicted prices change as days before departure change)
+    (visualising how predicted prices change as days before departure change)
 
 * **Booking recommendation**
 
   * Empirical price curve vs. `days_left`
   * Estimated “optimal booking window” (e.g. around 20–50 days before departure)
 
-### 4.1 Running the notebook
+### 5.1 Running the notebook
 
 1. Activate the virtual environment:
 
    ```bash
+   # Windows
    .\.venv\Scripts\activate
+
+   # or macOS / Linux
+   source .venv/bin/activate
    ```
 
 2. Start Jupyter (if running outside VS Code):
@@ -165,90 +222,159 @@ This notebook contains:
    Or in VS Code:
 
    * Open the `.ipynb` file.
-   * Select the Python 3.10 virtual environment as the kernel.
+   * Select the `.venv` Python 3.10 environment as the kernel.
    * Run all cells from top to bottom.
 
-3. Ensure that `Clean_Dataset.csv` is present in the project root so that the notebook and `train.py` can load it.
+3. Make sure `data/Clean_Dataset.csv` exists so that both the notebook and `train.py` can load it.
 
 ---
 
-## 5. Training Script (`train.py`)
+## 6. Training Script (`train.py`)
 
-The script `train.py` encapsulates the final training logic used in the notebook.
+The script `train.py` encapsulates the final training pipeline used in the notebook.
 
-### 5.1 What `train.py` does
+### 6.1 What `train.py` does
 
-1. **Data loading and preprocessing**
+1. **Path setup**
 
-   * Reads `Clean_Dataset.csv`.
-   * Drops `Unnamed: 0` if present.
-   * Maps `stops` to numeric codes (0/1/2).
+   * Ensures the following folders exist:
+
+     * `data/`, `models/`, `output/`, `notebook/`
+   * Loads data from:
+     `data/Clean_Dataset.csv`
+
+2. **Data loading and preprocessing**
+
+   * Checks that all required columns exist.
+   * Maps `stops` to numeric codes:
+
+     * `"zero" → 0`, `"one" → 1`, `"two_or_more" → 2` (stored in `stops_encoded`)
    * Creates `route = source_city + "-" + destination_city`.
    * Computes `log_price = log1p(price)` as the regression target.
 
-2. **Feature matrix and target vector**
+3. **Feature matrix and target vector**
 
-   * Drops `["price", "log_price", "flight", "source_city", "destination_city"]` from features.
-   * Uses `log_price` as the target (`y`).
-   * Ensures `days_left` is numeric (`float`).
+   * Feature columns:
 
-3. **Preprocessing pipeline**
+     ```text
+     ["airline", "source_city", "destination_city",
+      "departure_time", "arrival_time",
+      "class", "duration", "days_left",
+      "stops_encoded", "route"]
+     ```
 
-   * Numerical features: `["duration", "days_left"]`
-   * Categorical features: all remaining columns.
-   * Uses `ColumnTransformer` with `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` for categoricals and `"passthrough"` for numericals.
-   * Configured to output a `pandas.DataFrame` for better interpretability and compatibility.
+   * Target column: `log_price`.
 
-4. **Model comparison**
+4. **Train–test split**
 
-   * Compares multiple regression models (Linear / Tree / Random Forest / XGBoost / LightGBM).
-   * 80/20 train–test split with `random_state=42`.
-   * Evaluates model performance on the **original price** scale using:
+   * Uses an 80/20 split with a fixed random seed:
 
-     * `R²`
-     * `MAE`
-   * Selects the model with the **lowest MAE**.
+     ```python
+     train_test_split(X, y, test_size=0.2, random_state=42)
+     ```
 
-5. **Saving the best model**
+5. **Preprocessing pipeline**
 
+   * Numerical features: `["duration", "days_left", "stops_encoded"]`
+   * Categorical features:
+     `["airline", "source_city", "destination_city", "departure_time",
+       "arrival_time", "class", "route"]`
+   * Uses a `ColumnTransformer`:
+
+     * **Numeric**: `SimpleImputer(strategy="median")` + `StandardScaler`
+     * **Categorical**: `SimpleImputer(strategy="most_frequent")` + `OneHotEncoder(handle_unknown="ignore")`
+
+6. **Model zoo and evaluation**
+
+   Trains 5 regression models:
+
+   * `LinearRegression`
+   * `DecisionTreeRegressor`
+   * `RandomForestRegressor`
+   * `XGBRegressor`
+   * `LGBMRegressor`
+
+   For each model:
+
+   * Fits on the training set using the full pipeline (preprocessing + model).
+
+   * Predicts `log_price` on the test set, then converts back to **original price**:
+
+     ```python
+     y_pred_log = pipe.predict(X_test)
+     y_pred_price = np.expm1(y_pred_log)
+     y_true_price = np.expm1(y_test)
+     ```
+
+   * Computes on the test set:
+
+     * `R²` (on `log_price`)
+     * `MAE` (on original `price`)
+
+   * Stores results in `output/model_results.csv`.
+
+7. **Selecting and saving the best model**
+
+   * Selects the model with the **lowest MAE** on the test set (original price scale).
    * Saves the full pipeline (preprocessing + best model) to:
 
      ```text
-     model.joblib
+     models/model.joblib
      ```
 
-   * This file may be large and is typically **not stored in Git**, but is regenerated by running `train.py`.
+8. **Generated plots (saved in `output/`)**
 
-### 5.2 How to run `train.py`
+   * `model_comparison_r2.png` – bar chart of R² for all models.
+   * `model_comparison_mae.png` – bar chart of MAE (original price) for all models.
+   * `price_vs_days_left.png` – scatter plot: ticket price vs. days_left (sampled subset).
+   * `feature_importance_top20.png` – top 20 features by importance for tree-based best model
+     (Random Forest / XGBoost / LightGBM only).
+
+### 6.2 How to run `train.py` (Windows / macOS / Linux)
 
 From the project root:
 
 ```bash
-# Activate venv first
+# 1. Activate venv
+# Windows
 .\.venv\Scripts\activate
 
-# Run training
+# macOS / Linux
+# source .venv/bin/activate
+
+# 2. Run training
 python train.py
 ```
 
-After successful training, you should see a summary of each model’s performance and a message similar to:
+After successful training, you should see:
 
-```text
-Saved best model pipeline to model.joblib
-```
+* A printed summary of each model’s performance.
+* `models/model.joblib` created or updated.
+* Several files in `output/`:
+
+  * `model_results.csv`
+  * `model_comparison_r2.png`
+  * `model_comparison_mae.png`
+  * `price_vs_days_left.png`
+  * (Optional) `feature_importance_top20.png`
 
 ---
 
-## 6. Serving the Model (`api.py` with FastAPI)
+## 7. Serving the Model (`api.py` with FastAPI)
 
 The script `api.py` exposes the trained model as a simple REST API using FastAPI.
 
-### 6.1 API overview
+### 7.1 API overview
 
-* Loads `model.joblib` (the best pipeline saved by `train.py`).
+* Loads `models/model.joblib` (the best pipeline saved by `train.py`).
 * Defines a `POST /predict` endpoint accepting flight details and returning a predicted ticket price.
+* Provides:
 
-The request body includes:
+  * `GET /health` – health check endpoint.
+  * `GET /docs` – Swagger UI (interactive API documentation).
+  * `GET /demo` – a simple web form (from `templates/demo.html`) calling `/predict` via JavaScript.
+
+The request body for `POST /predict` includes:
 
 * `airline`: string
 * `source_city`: string
@@ -260,33 +386,41 @@ The request body includes:
 * `duration`: float (hours)
 * `days_left`: int (days until departure)
 
-### 6.2 Running the API server
+### 7.2 Running the API server (Windows / macOS / Linux)
 
 From the project root:
 
 ```bash
 # Activate venv
+# Windows
 .\.venv\Scripts\activate
 
-# Make sure model.joblib exists (run train.py first if needed)
+# macOS / Linux
+# source .venv/bin/activate
+
+# Make sure models/model.joblib exists (run train.py first if needed)
 python train.py  # optional, if not yet trained
 
 # Start FastAPI server
-uvicorn api:app --host 0.0.0.0 --port 8000
+python -m uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The service will be available at:
 
-* Base URL: `http://localhost:8000`
-* Interactive API docs (Swagger UI): `http://localhost:8000/docs`
+* Base URL: `http://127.0.0.1:8000`
+* Health check: `http://127.0.0.1:8000/health`
+* Interactive API docs (Swagger UI): `http://127.0.0.1:8000/docs`
+* Demo UI: `http://127.0.0.1:8000/demo`
 
-### 6.3 Example request (PowerShell / cmd)
+### 7.3 Example request (curl)
+
+**Windows (PowerShell / cmd)**
 
 ```bash
-curl -X POST "http://localhost:8000/predict" ^
+curl -X POST "http://127.0.0.1:8000/predict" ^
      -H "Content-Type: application/json" ^
      -d "{
-           \"airline\": \"Indigo\",
+           \"airline\": \"IndiGo\",
            \"source_city\": \"Delhi\",
            \"destination_city\": \"Mumbai\",
            \"departure_time\": \"Morning\",
@@ -298,6 +432,24 @@ curl -X POST "http://localhost:8000/predict" ^
          }"
 ```
 
+**macOS / Linux**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "airline": "IndiGo",
+           "source_city": "Delhi",
+           "destination_city": "Mumbai",
+           "departure_time": "Morning",
+           "arrival_time": "Evening",
+           "stops": "one",
+           "travel_class": "Economy",
+           "duration": 2.5,
+           "days_left": 30
+         }'
+```
+
 Example JSON response:
 
 ```json
@@ -306,28 +458,59 @@ Example JSON response:
 }
 ```
 
+(Exact value depends on the random seed and model training.)
+
 ---
 
-## 7. Reproducibility & Environment Details
+## 8. Reproducibility Checklist (for Instructor / TA)
 
-* **Python version:** 3.10
+This section summarises the **exact steps** to reproduce the project results.
 
-* **Random seed:** 42 (for data splitting and model initialization where applicable)
+### 8.1 Environment setup
 
-* **Core libraries:**
+1. Clone the repository:
 
-  * `scikit-learn`
-  * `xgboost`
-  * `lightgbm`
-  * `pandas`, `numpy`
+   ```bash
+   git clone https://github.com/<your-username>/Analysis-of-Flight-Prices-and-Optimal-Booking-Time.git
+   cd Analysis-of-Flight-Prices-and-Optimal-Booking-Time
+   ```
 
-* **Reproducing figures:**
+2. Create and activate a Python 3.10 virtual environment:
 
-  * All plots (model comparison, PDP, etc.) are generated in
-    `Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`.
-  * Important plots can be exported and stored in the `figures/` folder for the report.
+   ```bash
+   # Windows
+   python -m venv .venv
+   .\.venv\Scripts\activate
 
-**How to reproduce the 80/20 test split and reported scores**
+   # macOS / Linux
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Download the Kaggle dataset and place the cleaned CSV as:
+
+   ```text
+   data/Clean_Dataset.csv
+   ```
+
+### 8.2 Retrain the model
+
+From the project root:
+
+```bash
+python train.py
+```
+
+Expected:
+
+* `models/model.joblib` created/updated.
+* `output/model_results.csv` and several `.png` plots generated.
 
 Both the notebook and `train.py` use:
 
@@ -335,21 +518,25 @@ Both the notebook and `train.py` use:
 train_test_split(X, y, test_size=0.2, random_state=42)
 ```
 
-This means that when the TA:
+Therefore, re-running `train.py` reconstructs the **same 80/20 split** and re-computes metrics (`R²`, `MAE`) on the same test set (up to small floating-point differences).
 
-1. Downloads the dataset from Kaggle and saves it as `Clean_Dataset.csv` in the project root, and
-2. Runs:
+### 8.3 Run the API and demo
 
-   ```bash
-   .\.venv\Scripts\activate
-   python train.py
-   ```
+From the project root:
 
-the script will **recreate the same 80/20 split**, use the **same 20% of records as the test set**, and recompute the evaluation metrics (`R²`, `MAE`) on the original price scale. The reported results in the notebook and PDF can therefore be reproduced (up to minor floating-point differences).
+```bash
+python -m uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Then open in a browser:
+
+* `http://127.0.0.1:8000/docs` – interactive API docs
+* `http://127.0.0.1:8000/demo` – demo web page
+* `http://127.0.0.1:8000/health` – health check
 
 ---
 
-## 8. AI for Social Good Context
+## 9. AI for Social Good Context
 
 This project contributes to **AI for Social Good** in the following ways:
 
@@ -364,7 +551,7 @@ This project contributes to **AI for Social Good** in the following ways:
 
 ---
 
-## 9. Team & Contributions 
+## 10. Team & Contributions
 
 * **DingTianqi 1010730**
 
@@ -384,24 +571,31 @@ This project contributes to **AI for Social Good** in the following ways:
 
 ---
 
-## 10. Notes for Markers / TA
+## 11. Notes for Markers / TA
 
 * The **main notebook** for reviewing the analysis is:
-  `Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`.
+  `notebook/Machine Learning Analysis of Flight Prices and Optimal Booking Time_fin.ipynb`.
+
 * The **end-to-end reproducible pipeline** is encapsulated in:
 
-  * `train.py` (model training & saving)
-  * `api.py` (model serving)
-  * `requirements.txt` (dependencies)
-* To **fully reproduce the reported performance**:
+  * `train.py` – model training and saving
+  * `api.py` – model serving
+  * `requirements.txt` – dependency specification
 
-  1. Download the Kaggle dataset and save it locally as `Clean_Dataset.csv` in the project root.
-  2. Create and activate the Python 3.10 virtual environment.
-  3. Install dependencies using `pip install -r requirements.txt`.
-  4. Run `python train.py` to:
+To fully reproduce the reported performance:
 
-     * perform the 80/20 train–test split with `random_state=42`,
-     * train all candidate models,
-     * select the best model by MAE on the 20% test set,
-     * and save the final pipeline to `model.joblib`.
+1. Place the cleaned dataset in `data/Clean_Dataset.csv`.
+2. Create and activate a Python 3.10 virtual environment.
+3. Install dependencies with `pip install -r requirements.txt`.
+4. Run `python train.py` to:
 
+   * perform the 80/20 train–test split with `random_state=42`,
+   * train all candidate models,
+   * select the best model by **MAE** on the 20% test set (original price scale),
+   * and save the final pipeline to `models/model.joblib`.
+
+You may then start the FastAPI service (`api.py`) and use `/predict` or the `/demo` page to interact with the model.
+
+---
+
+```
